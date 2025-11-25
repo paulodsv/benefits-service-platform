@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-benefits}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-benefits_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-benefits_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init_db:/docker-entrypoint-initdb.d
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-benefits}:${POSTGRES_PASSWORD:-benefits_pass}@postgres:5432/${POSTGRES_DB:-benefits_db}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER:-guest}:${RABBITMQ_DEFAULT_PASS:-guest}@rabbitmq:5672/
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-benefits}:${POSTGRES_PASSWORD:-benefits_pass}@postgres:5432/${POSTGRES_DB:-benefits_db}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER:-guest}:${RABBITMQ_DEFAULT_PASS:-guest}@rabbitmq:5672/
+    depends_on:
+      - postgres
+      - rabbitmq
+    # aloca o diretório do projeto em /app para desenvolvimento (para que o contêiner veja o código local)
+    volumes:
+      - ./:/app
+
+volumes:
+  pgdata:
