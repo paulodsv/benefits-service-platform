@@ -67,7 +67,6 @@ RABBITMQ_DEFAULT_USER=guest
 RABBITMQ_DEFAULT_PASS=guest
 ```
 
-> **Dica:** você também pode usar o `.env.example` como base.
 > **Observação:** por se tratar de um projeto apenas para fins educativos, disponibilizei o env de acesso utilizado.
 
 ---
